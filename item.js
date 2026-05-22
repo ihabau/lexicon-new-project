@@ -1,18 +1,10 @@
-﻿class Item {
+﻿// NodeItem.js
+class NodeItem {
     constructor(name, disc) {
         this.name = name;
-        this.disc = disc; // Description
-        this.createdAt = new Date().toISOString(); // Optional: handy for data tracking
-    }
-
-    // Converts the class instance into a clean JSON-ready object
-    toObject() {
-        return {
-            name: this.name,
-            disc: this.disc,
-            createdAt: this.createdAt
-        };
+        this.disc = disc;
+        this.subEntries = []; // Every item can now hold its own child items
     }
 }
 
-module.exports = Item;
+module.exports = NodeItem;

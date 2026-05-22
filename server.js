@@ -11,48 +11,41 @@ const Item = require('./Item');
 const FILE_PATH = path.join(__dirname, './database.json');
 
 
-function addItemToDataset(name, disc) {
-    // 1. Create a new instance using your class
-    const newItem = new Item(name, disc);
-
-    let currentDataset = [];
-
-    // 2. Read existing data if the file already exists
-    if (fs.existsSync(FILE_PATH)) {
-        try {
-            const rawData = fs.readFileSync(FILE_PATH, 'utf8');
-            currentDataset = JSON.parse(rawData);
-            
-            // Safety check: ensure the file data is an array
-            if (!Array.isArray(currentDataset)) {
-                currentDataset = [];
-            }
-        } catch (error) {
-            console.error("Error reading or parsing dataset.json, resetting array:", error.message);
-            currentDataset = [];
+// Deep search helper function
+function findItemDeeply(array, targetName) {
+    for (const item of array) {
+        if (item.name.toLowerCase() === targetName.toLowerCase()) {
+            return item; // Found it!
+        }
+        // If this item has children, search inside them recursively
+        if (item.subEntries && item.subEntries.length > 0) {
+            const foundChild = findItemDeeply(item.subEntries, targetName);
+            if (foundChild) return foundChild;
         }
     }
-
-    // 3. Stack (append) the clean object onto the array
-    currentDataset.push(newItem.toObject());
-
-    // 4. Save the full stacked array back to disk with nice indentation formatting
-    fs.writeFileSync(FILE_PATH, JSON.stringify(currentDataset, null, 2), 'utf8');
-    
-    console.log(`Successfully added "${name}" to dataset.json!`);
-    return currentDataset;
+    return null; // Not found in this branch
 }
 
-module.exports = { addItemToDataset };
-
-
-// Middleware to parse incoming JSON requests
-app.use(express.json());
-
-// A test route for the home URL
-app.get('/', (req, res) => {
-    res.json({ message: "Hello World from the Node backend!" });
-});
+// Usage in your backend logic:
+function addDeepNestedItem(parentName, name, disc) {
+    const dataset = readDataset(); // reads dataset.json
+    
+    // Search through the entire nested tree structure
+    const targetParent = findItemDeeply(dataset, parentName);
+    
+    if (!targetParent) {
+        throw new Error(`Could not find parent entry "${parentName}" anywhere in the dataset.`);
+    }
+    
+    // Add the new item right into that deep nested target
+    targetParent.subEntries.push({
+        name: name,
+        disc: disc,
+        subEntries: []
+    });
+    
+    saveDataset(dataset); // saves back to dataset.json
+}
 
 
 
